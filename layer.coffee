@@ -23,7 +23,7 @@ define (require)->
     drag:  #拖拽
       enable: true #允许拖动
       cursor: 'move'
-      axis : null #拖动方向  横向X  纵向Y
+      #axis : null #拖动方向  横向X  纵向Y
       containment : '.g-doc' #设置拖拽范围的元素
       delay: 50
       distance: 10
@@ -39,14 +39,14 @@ define (require)->
       refreshHeight: false  #刷新高度
       #carrier: 'iframe'  载入方式
     callbacks: #回调
-      ok: (e,ele,layer,eData)->
+      ok: (e,ele,_layer,layer,eData)->
         layer.destroy()
-      no: (e,ele,layer,eData)->
+      no: (e,ele,_layer,layer,eData)->
         layer.destroy()
-      close: (e,ele,layer,eData)->
+      close: (e,ele,_layer,layer,eData)->
         layer.destroy()
   zIndex =  -2
-  subElements = ['toolbar','menubar','area','statusbar','mask','cont','btns','operates','title']
+  subElements = ['toolbar','menubar','area','btns','operates','statusbar','mask','cont','title']
   urlSimpleReg = /([^?#]*)(\?[^#]*)?(#.*)?/
   protocolReg = /^(http:|https:)?\/\/.+/  #简单的判断protocol
   _escs = []
@@ -146,10 +146,8 @@ define (require)->
         $.isFunction(layer.settings.callbacks.loadAlways) and layer.settings.callbacks.loadAlways(ele,data,status,xhr)
     _autoClose(ele,layer)
   _createOperate = (conf,isBtn)->
-    #_conf = if data[conf] then conf else 'other'
-    #'<a href="' + (if data[_conf].link then data[_conf].link else 'javascript:;') + '" class="' + (if isBtn then 'u-btn ' + data[_conf].class else '') + ' J_action-layer btn-layer-' + conf + '" data-action="' + (if data[_conf].action then data[_conf].action else conf) + '">' + data[_conf].name + '</a>'
     if $.isArray(conf)
-      '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>'
+      '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>'
   _parseBtnsConf = (conf,isBtns)->
     if typeof conf is 'number' or conf > 0
       _conf = btns.slice(0,conf)
@@ -215,9 +213,9 @@ define (require)->
           _ele = layer.settings[j](j,_ele,ele,layer)
         else  #此处不处理操作按钮与operate按钮
           _ele = _createEle(j,layer.settings[j],_ele,layer)
-        if i < 4 or i is 7 or i is 6
+        if i < 6
           _box = ele
-        else if i is 5
+        else if i is 7
           _box = ele.find('.layer-area')
         else if i is 8
           _box = ele.find('.layer-toolbar')
@@ -289,7 +287,7 @@ define (require)->
             if (close = ele.find('.btn-layer-close')).length
               close.trigger('click.layer')
             else if $.isFunction(layer.settings.callbacks.close)
-              layer.settings.callbacks.close(null,ele,layer,null)
+              layer.settings.callbacks.close(null,ele,ele,layer,null)
             else
               layer.destroy()
       ,layer.settings.autoClose
@@ -315,7 +313,7 @@ define (require)->
       if actionFns
         i = 0
         while i < actionFns.length
-          if $.isFunction(layer.settings.callbacks[actionFns[i]]) and layer.settings.callbacks[actionFns[i]](e,ele,layer,eData) is false
+          if $.isFunction(layer.settings.callbacks[actionFns[i]]) and layer.settings.callbacks[actionFns[i]](e,self,ele,layer,eData) is false
             break
           else
             ++i
@@ -338,7 +336,7 @@ define (require)->
             while len-- > 0
               if SX.layers[layer.escQue[len]].status isnt 'hidden'
                 if $.isFunction(SX.layers[layer.escQue[len]].settings.callbacks.close)
-                  SX.layers[layer.escQue[len]].settings.callbacks.close(e,$('.layer-idx-' + SX.layers[layer.escQue[len]].idx),SX.layers[layer.escQue[len]],eData)
+                  SX.layers[layer.escQue[len]].settings.callbacks.close(e,$('.layer-idx-' + SX.layers[layer.escQue[len]].idx),$('.layer-idx-' + SX.layers[layer.escQue[len]].idx),SX.layers[layer.escQue[len]],eData)
                 else
                   SX.layers[layer.escQue[len]].destroy()
             undefined

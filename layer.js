@@ -21,7 +21,6 @@ define(function(require) {
     drag: {
       enable: true,
       cursor: 'move',
-      axis: null,
       containment: '.g-doc',
       delay: 50,
       distance: 10,
@@ -38,19 +37,19 @@ define(function(require) {
       refreshHeight: false
     },
     callbacks: {
-      ok: function(e, ele, layer, eData) {
+      ok: function(e, ele, _layer, layer, eData) {
         return layer.destroy();
       },
-      no: function(e, ele, layer, eData) {
+      no: function(e, ele, _layer, layer, eData) {
         return layer.destroy();
       },
-      close: function(e, ele, layer, eData) {
+      close: function(e, ele, _layer, layer, eData) {
         return layer.destroy();
       }
     }
   };
   zIndex = -2;
-  subElements = ['toolbar', 'menubar', 'area', 'statusbar', 'mask', 'cont', 'btns', 'operates', 'title'];
+  subElements = ['toolbar', 'menubar', 'area', 'btns', 'operates', 'statusbar', 'mask', 'cont', 'title'];
   urlSimpleReg = /([^?#]*)(\?[^#]*)?(#.*)?/;
   protocolReg = /^(http:|https:)?\/\/.+/;
   _escs = [];
@@ -176,7 +175,7 @@ define(function(require) {
   };
   _createOperate = function(conf, isBtn) {
     if ($.isArray(conf)) {
-      return '<a href="' + (conf[3] ? conf[3] : 'javascript:;') + '" class="' + ((isBtn ? 'u-btn ' : '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>';
+      return '<a href="' + (conf[3] ? conf[3] : 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((isBtn ? 'u-btn ' : '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>';
     }
   };
   _parseBtnsConf = function(conf, isBtns) {
@@ -260,9 +259,9 @@ define(function(require) {
         } else {
           _ele = _createEle(j, layer.settings[j], _ele, layer);
         }
-        if (i < 4 || i === 7 || i === 6) {
+        if (i < 6) {
           _box = ele;
-        } else if (i === 5) {
+        } else if (i === 7) {
           _box = ele.find('.layer-area');
         } else if (i === 8) {
           _box = ele.find('.layer-toolbar');
@@ -355,7 +354,7 @@ define(function(require) {
             if ((close = ele.find('.btn-layer-close')).length) {
               return close.trigger('click.layer');
             } else if ($.isFunction(layer.settings.callbacks.close)) {
-              return layer.settings.callbacks.close(null, ele, layer, null);
+              return layer.settings.callbacks.close(null, ele, ele, layer, null);
             } else {
               return layer.destroy();
             }
@@ -391,7 +390,7 @@ define(function(require) {
       if (actionFns) {
         i = 0;
         while (i < actionFns.length) {
-          if ($.isFunction(layer.settings.callbacks[actionFns[i]]) && layer.settings.callbacks[actionFns[i]](e, ele, layer, eData) === false) {
+          if ($.isFunction(layer.settings.callbacks[actionFns[i]]) && layer.settings.callbacks[actionFns[i]](e, self, ele, layer, eData) === false) {
             break;
           } else {
             ++i;
@@ -424,7 +423,7 @@ define(function(require) {
             while (len-- > 0) {
               if (SX.layers[layer.escQue[len]].status !== 'hidden') {
                 if ($.isFunction(SX.layers[layer.escQue[len]].settings.callbacks.close)) {
-                  SX.layers[layer.escQue[len]].settings.callbacks.close(e, $('.layer-idx-' + SX.layers[layer.escQue[len]].idx), SX.layers[layer.escQue[len]], eData);
+                  SX.layers[layer.escQue[len]].settings.callbacks.close(e, $('.layer-idx-' + SX.layers[layer.escQue[len]].idx), $('.layer-idx-' + SX.layers[layer.escQue[len]].idx), SX.layers[layer.escQue[len]], eData);
                 } else {
                   SX.layers[layer.escQue[len]].destroy();
                 }
