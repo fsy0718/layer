@@ -4,6 +4,7 @@
 # TODO 需要增加 $('div').layer的调用
 define (require)->
   btns = [['ok','s-save','确定'],['no','s-cancel','取消'],['other','s-tip','其它']]
+  opes = [['max','ope-max','最大化'],['min','ope-min','最小化'],['close','ope-close','关闭']]
   config =
     view: #视图模块
       zIndex: 870617
@@ -145,35 +146,45 @@ define (require)->
           loading.remove()
         $.isFunction(layer.settings.callbacks.loadAlways) and layer.settings.callbacks.loadAlways(ele,data,status,xhr)
     _autoClose(ele,layer)
+
   _createOperate = (conf,isBtn)->
-    if $.isArray(conf)
-      '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>'
+    $.isArray(conf) and '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || ''
+
   _parseBtnsConf = (conf,isBtns)->
+    _btns = {}
     if typeof conf is 'number' or conf > 0
-      _conf = btns.slice(0,conf)
+      _btns.msg = if isBtns then btns.slice(0,conf) else opes.slice(0,conf)
       if conf > 3
         i = 0
         while i < conf - 3
-          _conf.push(['other' + i,(if isBtns then 's-tip other-' + i else 'ope-' + i), '其它' + i])
+          if isBtns
+            _btns.msg.push(['other' + i,'s-tip other-' + i, '其它' + i])
+          else
+            _btns.msg.unshift(['other' + i,'ope-' + i, '其它' + i])
           i++
     else if typeof conf is 'string'
-      if isClassOrId(conf)
-        _conf = conf
-      else
-        _btns = conf.split(',')
-        len = _btns.length
-        _conf = btns.slice(0,len)
-        i = 0
-        while i < len
-          _conf[i][2] = _btns[i]
-          i++
-        _conf
-    else
-      _conf = conf
-    _conf
+      str = conf.split(',')
+      len = str.length
+      _btns.msg = if isBtns then btns.slice(0,len) else opes.slice(0,len)
+      i = 0
+      while i < len
+        if i > 2 then _btns.msg.push(['other' + (i - 2),(if isBtns then 's-tip other-' + (i - 2) else 'ope-' + (i - 2)), '其它' + (i - 2)]) else _btns.msg[i][2] = str[i]
+        i++
+    _btns
 
   _parseBtns = (conf,isBtns)->
-    _parseBtnsConf((if $.isPlainObject(conf) then (if conf.msg then conf.msg else conf) else conf),isBtns)
+    _isSuit =  $.isPlainObject(conf) and conf.msg || conf
+    if typeof _isSuit is 'number' or typeof _isSuit is 'string' and !isClassOrId(_isSuit)
+      if $.isPlainObject(conf)
+        $.extend true,conf,_parseBtnsConf(_isSuit,isBtns)
+      else
+        conf = _parseBtnsConf(_isSuit,isBtns)
+    else if $.isArray(conf)
+      return {msg: conf}
+    conf
+
+
+
 
   _createEle = (type,conf,ele,layer)->  #根据配置生成对应的元素
     if type is 'btns' or type is 'operates'
@@ -194,8 +205,9 @@ define (require)->
           _asyncCont(conf.msg,ele,layer)
         else if type is 'operates' or type is 'btns'
           _html = ''
-          $.each conf,(i,j)->
-            _html += _createOperate(j,isBtn)
+          if conf.msg
+            $.each conf.msg,(i,j)->
+              _html += _createOperate(j,isBtn)
           ele.html(_html)
         else
           ele.html conf.msg
@@ -210,7 +222,7 @@ define (require)->
       if layer.settings[j]
         _ele = $('<div class="layer-' + j + '"></div>')
         if $.isFunction(layer.settings[j])
-          _ele = layer.settings[j](j,_ele,ele,layer)
+          _ele = $(layer.settings[j](j,_ele,ele,layer))
         else  #此处不处理操作按钮与operate按钮
           _ele = _createEle(j,layer.settings[j],_ele,layer)
         if i < 6
@@ -283,13 +295,12 @@ define (require)->
         unless $.isFunction(layer.settings.callbacks.beforeAutoClose) and layer.settings.callbacks.beforeAutoClose(ele,layer) is false
           layer.hide()  #TODO  先隐藏便于调用回调函数
           $.isFunction(layer.settings.callbacks.afterAutoClose) and layer.settings.callbacks.afterAutoClose(ele,layer)
-          if layer.status isnt 'hidden'
-            if (close = ele.find('.btn-layer-close')).length
-              close.trigger('click.layer')
-            else if $.isFunction(layer.settings.callbacks.close)
-              layer.settings.callbacks.close(null,ele,ele,layer,null)
-            else
-              layer.destroy()
+          if (close = ele.find('.btn-layer-close')).length
+            close.trigger('click.layer')
+          else if $.isFunction(layer.settings.callbacks.close)
+            layer.settings.callbacks.close(null,ele,ele,layer,null)
+          else
+            layer.destroy()
       ,layer.settings.autoClose
 
   _unbindEvent = (ele,layer)->

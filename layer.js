@@ -1,6 +1,7 @@
 define(function(require) {
-  var Layer, btns, config, escQue, init, isClassOrId, layer, protocolReg, subElements, urlSimpleReg, zIndex, _adjustView, _asyncCont, _autoClose, _bindEvent, _camelCase, _createEle, _createIframe, _createOperate, _createShelf, _escs, _fixUrl, _getWithoutAreaHeight, _parseBtns, _parseBtnsConf, _unbindEvent;
+  var Layer, btns, config, escQue, init, isClassOrId, layer, opes, protocolReg, subElements, urlSimpleReg, zIndex, _adjustView, _asyncCont, _autoClose, _bindEvent, _camelCase, _createEle, _createIframe, _createOperate, _createShelf, _escs, _fixUrl, _getWithoutAreaHeight, _parseBtns, _parseBtnsConf, _unbindEvent;
   btns = [['ok', 's-save', '确定'], ['no', 's-cancel', '取消'], ['other', 's-tip', '其它']];
+  opes = [['max', 'ope-max', '最大化'], ['min', 'ope-min', '最小化'], ['close', 'ope-close', '关闭']];
   config = {
     view: {
       zIndex: 870617,
@@ -174,42 +175,55 @@ define(function(require) {
     return _autoClose(ele, layer);
   };
   _createOperate = function(conf, isBtn) {
-    if ($.isArray(conf)) {
-      return '<a href="' + (conf[3] ? conf[3] : 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((isBtn ? 'u-btn ' : '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>';
-    }
+    return $.isArray(conf) && '<a href="' + (conf[3] ? conf[3] : 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((isBtn ? 'u-btn ' : '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || '';
   };
   _parseBtnsConf = function(conf, isBtns) {
-    var i, len, _btns, _conf;
+    var i, len, str, _btns;
+    _btns = {};
     if (typeof conf === 'number' || conf > 0) {
-      _conf = btns.slice(0, conf);
+      _btns.msg = isBtns ? btns.slice(0, conf) : opes.slice(0, conf);
       if (conf > 3) {
         i = 0;
         while (i < conf - 3) {
-          _conf.push(['other' + i, (isBtns ? 's-tip other-' + i : 'ope-' + i), '其它' + i]);
+          if (isBtns) {
+            _btns.msg.push(['other' + i, 's-tip other-' + i, '其它' + i]);
+          } else {
+            _btns.msg.unshift(['other' + i, 'ope-' + i, '其它' + i]);
+          }
           i++;
         }
       }
     } else if (typeof conf === 'string') {
-      if (isClassOrId(conf)) {
-        _conf = conf;
-      } else {
-        _btns = conf.split(',');
-        len = _btns.length;
-        _conf = btns.slice(0, len);
-        i = 0;
-        while (i < len) {
-          _conf[i][2] = _btns[i];
-          i++;
+      str = conf.split(',');
+      len = str.length;
+      _btns.msg = isBtns ? btns.slice(0, len) : opes.slice(0, len);
+      i = 0;
+      while (i < len) {
+        if (i > 2) {
+          _btns.msg.push(['other' + (i - 2), (isBtns ? 's-tip other-' + (i - 2) : 'ope-' + (i - 2)), '其它' + (i - 2)]);
+        } else {
+          _btns.msg[i][2] = str[i];
         }
-        _conf;
+        i++;
       }
-    } else {
-      _conf = conf;
     }
-    return _conf;
+    return _btns;
   };
   _parseBtns = function(conf, isBtns) {
-    return _parseBtnsConf(($.isPlainObject(conf) ? (conf.msg ? conf.msg : conf) : conf), isBtns);
+    var _isSuit;
+    _isSuit = $.isPlainObject(conf) && conf.msg || conf;
+    if (typeof _isSuit === 'number' || typeof _isSuit === 'string' && !isClassOrId(_isSuit)) {
+      if ($.isPlainObject(conf)) {
+        $.extend(true, conf, _parseBtnsConf(_isSuit, isBtns));
+      } else {
+        conf = _parseBtnsConf(_isSuit, isBtns);
+      }
+    } else if ($.isArray(conf)) {
+      return {
+        msg: conf
+      };
+    }
+    return conf;
   };
   _createEle = function(type, conf, ele, layer) {
     var isBtn, _class, _html;
@@ -233,9 +247,11 @@ define(function(require) {
           _asyncCont(conf.msg, ele, layer);
         } else if (type === 'operates' || type === 'btns') {
           _html = '';
-          $.each(conf, function(i, j) {
-            return _html += _createOperate(j, isBtn);
-          });
+          if (conf.msg) {
+            $.each(conf.msg, function(i, j) {
+              return _html += _createOperate(j, isBtn);
+            });
+          }
           ele.html(_html);
         } else {
           ele.html(conf.msg);
@@ -255,7 +271,7 @@ define(function(require) {
       if (layer.settings[j]) {
         _ele = $('<div class="layer-' + j + '"></div>');
         if ($.isFunction(layer.settings[j])) {
-          _ele = layer.settings[j](j, _ele, ele, layer);
+          _ele = $(layer.settings[j](j, _ele, ele, layer));
         } else {
           _ele = _createEle(j, layer.settings[j], _ele, layer);
         }
