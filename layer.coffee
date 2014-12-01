@@ -38,6 +38,7 @@ define (require)->
       type: 'get'
       data: null
       refreshHeight: false  #刷新高度
+      refreshShow: false
       #carrier: 'iframe'  载入方式
     callbacks: #回调
       ok: (e,ele,_layer,layer,eData)->
@@ -182,10 +183,6 @@ define (require)->
     else if $.isArray(conf)
       return {msg: conf}
     conf
-
-
-
-
   _createEle = (type,conf,ele,layer)->  #根据配置生成对应的元素
     if type is 'btns' or type is 'operates'
       isBtn = type is 'btns'
@@ -398,12 +395,12 @@ define (require)->
       _layer = $('.layer-idx-' + layer.idx).css(layer._view).show()  #回复原来位置
       if layer.settings.mask
         $('.mask-' + layer.idx).show()
-      ### TODO  暂时不做处理，只加载一次
-      if layer.settings.ajax and layer.settings.ajax.enable
+      # TODO  暂时不做处理，只加载一次
+      if layer.settings.ajax and layer.settings.ajax.enable and layer.settings.ajax.refreshShow
         url = if typeof layer.settings.cont is 'string' then layer.settings.cont else layer.settings.cont.msg
         _asyncCont(url,_layer.find('.layer-cont'),layer)
 
-      ###
+
 
   Layer::hide = (idx)->
     layer = if idx then SX.layers[idx] else @
@@ -415,7 +412,7 @@ define (require)->
         layer._autoCloseTime = null
       ~(_idx = $.inArray(layer.idx,layer.escQue)) and layer.escQue.splice(_idx,1)
       layer.settings.mask and $('.mask-' + layer.idx).hide()
-      if layer.settings.ajax and layer.settings.ajax.enable
+      if layer.settings.ajax and layer.settings.ajax.enable and layer.settings.ajax.refreshShow
         if layer.settings.ajax.carrier is 'iframe' then _layer.find('.layer-iframe').attr('src','javascript:;') else layer.ajax and layer.ajax.abort()
 
   Layer::destroy = (idx)->
