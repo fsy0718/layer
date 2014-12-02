@@ -149,27 +149,34 @@ define (require)->
     _autoClose(ele,layer)
 
   _createOperate = (conf,isBtn)->
-    $.isArray(conf) and '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || ''
+    $.isArray(conf) and conf.length and '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || ''
 
   _parseBtnsConf = (conf,isBtns)->
-    _btns = {}
+    _parseBtnsConf = (conf,isBtns)->
+    _btns = 
+      msg: []
+    i = 0
     if typeof conf is 'number' or conf > 0
-      _btns.msg = if isBtns then btns.slice(0,conf) else opes.slice(0,conf)
-      if conf > 3
-        i = 0
-        while i < conf - 3
+      while i < conf
+        if i < 3
+          _btns.msg.push((if isBtns then btns else opes)[i].concat())
+        else
+          _i = i - 2
           if isBtns
-            _btns.msg.push(['other' + i,'s-tip other-' + i, '其它' + i])
+            _btns.msg.push(['other' + _i,'s-tip other-' + _i, '其它' + _i])
           else
-            _btns.msg.unshift(['other' + i,'ope-' + i, '其它' + i])
-          i++
+            _btns.msg.unshift(['other' + _i,'ope-' + _i, '其它' + _i])
+        i++
     else if typeof conf is 'string'
       str = conf.split(',')
       len = str.length
-      _btns.msg = if isBtns then btns.slice(0,len) else opes.slice(0,len)
-      i = 0
       while i < len
-        if i > 2 then _btns.msg.push(['other' + (i - 2),(if isBtns then 's-tip other-' + (i - 2) else 'ope-' + (i - 2)), '其它' + (i - 2)]) else _btns.msg[i][2] = str[i]
+        if i < 3
+          _item = (if isBtns then btns else opes)[i].concat()
+          _item[2] = str[i]
+          _btns.msg.push(_item)
+        else
+           _btns.msg.push(['other' + (i - 2),(if isBtns then 's-tip other-' + (i - 2) else 'ope-' + (i - 2)), '其它' + (i - 2)])
         i++
     _btns
 
