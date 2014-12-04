@@ -59,7 +59,6 @@ define (require)->
     self.escQue = escQue
     _idx = $.isNumeric(conf) and conf or $.isPlainObject(conf) and conf.idx
     if _idx and layer = self.getLayer(conf.idx)#如果已经实例化Layer，则直接显示
-      $.isFunction(layer.settings.callbacks.beforeShow) and layer.settings.callbacks.beforeShow(layer)
       layer.show()
       layer
     else
@@ -262,7 +261,7 @@ define (require)->
             else
               n = parseFloat(layerView['w' + props[i % 2 + 4]]) * _n
         else if i < 6 and i > 3 and first
-          n = layerView['min' + _j] || ele['outer' + _j](true)
+          n = layerView['min' + _j] || (ele['outer' + _j](true) + 1) #+1防止出现小数px导致换行
         n = Math.ceil(parseFloat(n))
         $.isNumeric(n) and layerView[j] = n
         if i < 6 and i > 3
@@ -399,9 +398,12 @@ define (require)->
     if layer
       layer.status = 'active'
       layer.esc()
-      _layer = $('.layer-idx-' + layer.idx).css(layer._view).show()  #回复原来位置
       if layer.settings.mask
         $('.mask-' + layer.idx).show()
+      _layer = $('.layer-idx-' + layer.idx).css(layer._view)
+      $.isFunction(layer.settings.callbacks.beforeShow) and layer.settings.callbacks.beforeShow(_layer,layer)
+      _layer.show()  #回复原来位置
+      
       # TODO  暂时不做处理，只加载一次
       if layer.settings.ajax and layer.settings.ajax.enable and layer.settings.ajax.refreshShow
         url = if typeof layer.settings.cont is 'string' then layer.settings.cont else layer.settings.cont.msg
