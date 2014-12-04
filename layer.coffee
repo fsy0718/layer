@@ -127,15 +127,25 @@ define (require)->
       .done (json,status,xhr)->
         if layer.status is 'hidden'
           return
-        if layer.settings.ajax.refreshHeight
-          _overflow = ele.css('overflow')
-          ele.css({'overflow':'hidden'}).html(json)  #先隐藏获取高度  然后再正常显示
-          h = ele.outerHeight(true)
-          h and _adjustView(ele.parents('.m-layer'),{height: h,_cont:true},layer,false)
-          ele.css('overflow',_overflow)
-        else
-          ele.html(json)
+        ele.html(json)
         $.isFunction(layer.settings.callbacks.afterLoadSucc) and layer.settings.callbacks.afterLoadSucc(ele,layer)
+        if layer.settings.ajax.refreshHeight
+          childrens = ele.children()
+          h = 0
+          len = childrens.length
+          if len is 1
+            h = childrens.outerHeight(true)
+          else if len > 1
+            $.each childrens,(i)->
+              _t = $(@)
+              h += _t.outerHeight()
+              unless i
+                h += _t.css('marginTop')
+              if i is len - 1
+                h += _t.css('marginBottom')
+              if i and i < len - 1
+                h += Math.max(childrens.eq(i).css('marginBottom'),childrens.eq(i + 1).css('marginBottom'))
+          h and _adjustView(ele.parents('.m-layer'),{height: h,_cont:true},layer,false)
       .error (xhr,status,error)->
         if error is 'abort'
           return

@@ -141,25 +141,39 @@ define(function(require) {
         type: layer.settings.ajax.type,
         data: layer.settings.ajax.data
       }).done(function(json, status, xhr) {
-        var h, _overflow;
+        var childrens, h, len;
         if (layer.status === 'hidden') {
           return;
         }
+        ele.html(json);
+        $.isFunction(layer.settings.callbacks.afterLoadSucc) && layer.settings.callbacks.afterLoadSucc(ele, layer);
         if (layer.settings.ajax.refreshHeight) {
-          _overflow = ele.css('overflow');
-          ele.css({
-            'overflow': 'hidden'
-          }).html(json);
-          h = ele.outerHeight(true);
-          h && _adjustView(ele.parents('.m-layer'), {
+          childrens = ele.children();
+          h = 0;
+          len = childrens.length;
+          if (len === 1) {
+            h = childrens.outerHeight(true);
+          } else if (len > 1) {
+            $.each(childrens, function(i) {
+              var _t;
+              _t = $(this);
+              h += _t.outerHeight();
+              if (!i) {
+                h += _t.css('marginTop');
+              }
+              if (i === len - 1) {
+                h += _t.css('marginBottom');
+              }
+              if (i && i < len - 1) {
+                return h += Math.max(childrens.eq(i).css('marginBottom'), childrens.eq(i + 1).css('marginBottom'));
+              }
+            });
+          }
+          return h && _adjustView(ele.parents('.m-layer'), {
             height: h,
             _cont: true
           }, layer, false);
-          ele.css('overflow', _overflow);
-        } else {
-          ele.html(json);
         }
-        return $.isFunction(layer.settings.callbacks.afterLoadSucc) && layer.settings.callbacks.afterLoadSucc(ele, layer);
       }).error(function(xhr, status, error) {
         if (error === 'abort') {
           return;
