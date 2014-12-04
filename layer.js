@@ -64,7 +64,6 @@ define(function(require) {
     self.escQue = escQue;
     _idx = $.isNumeric(conf) && conf || $.isPlainObject(conf) && conf.idx;
     if (_idx && (layer = self.getLayer(conf.idx))) {
-      $.isFunction(layer.settings.callbacks.beforeShow) && layer.settings.callbacks.beforeShow(layer);
       layer.show();
       return layer;
     } else {
@@ -177,34 +176,39 @@ define(function(require) {
     return _autoClose(ele, layer);
   };
   _createOperate = function(conf, isBtn) {
-    return $.isArray(conf) && '<a href="' + (conf[3] ? conf[3] : 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((isBtn ? 'u-btn ' : '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || '';
+    return $.isArray(conf) && conf.length && '<a href="' + (conf[3] ? conf[3] : 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((isBtn ? 'u-btn ' : '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || '';
   };
   _parseBtnsConf = function(conf, isBtns) {
-    var i, len, str, _btns;
-    _btns = {};
+    var i, len, str, _btns, _i, _item;
+    _parseBtnsConf = function(conf, isBtns) {};
+    _btns = {
+      msg: []
+    };
+    i = 0;
     if (typeof conf === 'number' || conf > 0) {
-      _btns.msg = isBtns ? btns.slice(0, conf) : opes.slice(0, conf);
-      if (conf > 3) {
-        i = 0;
-        while (i < conf - 3) {
+      while (i < conf) {
+        if (i < 3) {
+          _btns.msg.push((isBtns ? btns : opes)[i].concat());
+        } else {
+          _i = i - 2;
           if (isBtns) {
-            _btns.msg.push(['other' + i, 's-tip other-' + i, '其它' + i]);
+            _btns.msg.push(['other' + _i, 's-tip other-' + _i, '其它' + _i]);
           } else {
-            _btns.msg.unshift(['other' + i, 'ope-' + i, '其它' + i]);
+            _btns.msg.unshift(['other' + _i, 'ope-' + _i, '其它' + _i]);
           }
-          i++;
         }
+        i++;
       }
     } else if (typeof conf === 'string') {
       str = conf.split(',');
       len = str.length;
-      _btns.msg = isBtns ? btns.slice(0, len) : opes.slice(0, len);
-      i = 0;
       while (i < len) {
-        if (i > 2) {
-          _btns.msg.push(['other' + (i - 2), (isBtns ? 's-tip other-' + (i - 2) : 'ope-' + (i - 2)), '其它' + (i - 2)]);
+        if (i < 3) {
+          _item = (isBtns ? btns : opes)[i].concat();
+          _item[2] = str[i];
+          _btns.msg.push(_item);
         } else {
-          _btns.msg[i][2] = str[i];
+          _btns.msg.push(['other' + (i - 2), (isBtns ? 's-tip other-' + (i - 2) : 'ope-' + (i - 2)), '其它' + (i - 2)]);
         }
         i++;
       }
@@ -319,7 +323,7 @@ define(function(require) {
             }
           }
         } else if (i < 6 && i > 3 && first) {
-          n = layerView['min' + _j] || ele['outer' + _j](true);
+          n = layerView['min' + _j] || (ele['outer' + _j](true) + 1);
         }
         n = Math.ceil(parseFloat(n));
         $.isNumeric(n) && (layerView[j] = n);
@@ -368,14 +372,12 @@ define(function(require) {
         if (!($.isFunction(layer.settings.callbacks.beforeAutoClose) && layer.settings.callbacks.beforeAutoClose(ele, layer) === false)) {
           layer.hide();
           $.isFunction(layer.settings.callbacks.afterAutoClose) && layer.settings.callbacks.afterAutoClose(ele, layer);
-          if (layer.status !== 'hidden') {
-            if ((close = ele.find('.btn-layer-close')).length) {
-              return close.trigger('click.layer');
-            } else if ($.isFunction(layer.settings.callbacks.close)) {
-              return layer.settings.callbacks.close(null, ele, ele, layer, null);
-            } else {
-              return layer.destroy();
-            }
+          if ((close = ele.find('.btn-layer-close')).length) {
+            return close.trigger('click.layer');
+          } else if ($.isFunction(layer.settings.callbacks.close)) {
+            return layer.settings.callbacks.close(null, ele, ele, layer, null);
+          } else {
+            return layer.destroy();
           }
         }
       }, layer.settings.autoClose);
@@ -503,10 +505,12 @@ define(function(require) {
     if (layer) {
       layer.status = 'active';
       layer.esc();
-      _layer = $('.layer-idx-' + layer.idx).css(layer._view).show();
       if (layer.settings.mask) {
         $('.mask-' + layer.idx).show();
       }
+      _layer = $('.layer-idx-' + layer.idx).css(layer._view);
+      $.isFunction(layer.settings.callbacks.beforeShow) && layer.settings.callbacks.beforeShow(_layer, layer);
+      _layer.show();
       if (layer.settings.ajax && layer.settings.ajax.enable && layer.settings.ajax.refreshShow) {
         url = typeof layer.settings.cont === 'string' ? layer.settings.cont : layer.settings.cont.msg;
         return _asyncCont(url, _layer.find('.layer-cont'), layer);
@@ -634,4 +638,4 @@ define(function(require) {
   return layer;
 });
 
-//# sourceMappingURL=layer.1.1.map
+//# sourceMappingURL=layer.map
