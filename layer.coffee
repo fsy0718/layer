@@ -20,11 +20,12 @@ define (require)->
     operates: [['close','','']] #operates 与btns如果需要额外的信息 比如msg style 等  那么按钮只能在msg中出现  如果不需要，则可以直接把按钮放此对象下
     btns: false  #  格式为  ['ok','no','sssss']
     esc: true
+    maskClose: false
     autoClose: 0
     drag:  #拖拽
       enable: true #允许拖动
       cursor: 'move'
-      #axis : null #拖动方向  横向X  纵向Y
+    #axis : null #拖动方向  横向X  纵向Y
       containment : '.g-doc' #设置拖拽范围的元素
       delay: 50
       distance: 10
@@ -39,7 +40,7 @@ define (require)->
       data: null
       refreshHeight: false  #刷新高度
       refreshShow: false
-      #carrier: 'iframe'  载入方式
+  #carrier: 'iframe'  载入方式
     callbacks: #回调
       ok: (e,ele,_layer,layer,eData)->
         layer.destroy()
@@ -161,8 +162,7 @@ define (require)->
     $.isArray(conf) and conf.length and '<a href="' + (if conf[3] then conf[3] else 'javascript:;') + '" ' + (conf[4] || '') + ' class="' + ((if isBtn then 'u-btn ' else '') + conf[1]) + ' J_action-layer btn-layer-' + conf[0] + '" data-action="' + conf[0] + '">' + conf[2] + '</a>' || ''
 
   _parseBtnsConf = (conf,isBtns)->
-    _parseBtnsConf = (conf,isBtns)->
-    _btns = 
+    _btns =
       msg: []
     i = 0
     if typeof conf is 'number' or conf > 0
@@ -185,7 +185,7 @@ define (require)->
           _item[2] = str[i]
           _btns.msg.push(_item)
         else
-           _btns.msg.push(['other' + (i - 2),(if isBtns then 's-tip other-' + (i - 2) else 'ope-' + (i - 2)), '其它' + (i - 2)])
+          _btns.msg.push(['other' + (i - 2),(if isBtns then 's-tip other-' + (i - 2) else 'ope-' + (i - 2)), '其它' + (i - 2)])
         i++
     _btns
 
@@ -207,7 +207,7 @@ define (require)->
       if _class = isClassOrId(conf)
         ele.addClass(_class)
       else if type is 'cont' and layer.settings.ajax and layer.settings.ajax.enable
-       _asyncCont(conf,ele,layer)
+        _asyncCont(conf,ele,layer)
       else
         ele.html(conf)
     else if typeof conf is 'object'
@@ -283,6 +283,7 @@ define (require)->
       if data.height > (_h = layer._view.height - layer._view.withoutArea)
         area.css({'overflowY':'scroll',height:_h})
         cont.css 'height',data.height
+      ###TODO 还需要重置小于的情况###
       return
     ele.css _conf
     first and _conf.withoutArea = _getWithoutAreaHeight(ele)
@@ -323,6 +324,8 @@ define (require)->
       layer._escs.splice(idx,1)
       unless layer._escs.length
         $(document).off('keyup.layer')
+    if layer.settings.maskClose
+      $('.layer-mask.mask-' + layer.idx).off('click.layer')
     if layer._drag
       ele.draggable('destroy')
 
@@ -366,6 +369,14 @@ define (require)->
             undefined
       layer._escs.push(layer.idx)
       layer.esc()
+    if layer.settings.mask and layer.settings.maskClose
+      $('.layer-mask.mask-'+ layer.idx).on 'click.layer',->
+        _close = ele.find('.btn-layer-close')
+        if _close.length
+          _close.trigger('click.layer')
+        else
+          if $.isFunction(layer.settings.callbacks.close) then layer.settings.callbacks.close({},null,ele,layer,null) else layer.destroy()
+
 
   isClassOrId = (string)->
     (arr = /^[\.\#](.+)/.exec(string)) and arr[1]
@@ -413,7 +424,7 @@ define (require)->
       _layer = $('.layer-idx-' + layer.idx).css(layer._view)
       $.isFunction(layer.settings.callbacks.beforeShow) and layer.settings.callbacks.beforeShow(_layer,layer)
       _layer.show()  #回复原来位置
-      
+
       # TODO  暂时不做处理，只加载一次
       if layer.settings.ajax and layer.settings.ajax.enable and layer.settings.ajax.refreshShow
         url = if typeof layer.settings.cont is 'string' then layer.settings.cont else layer.settings.cont.msg

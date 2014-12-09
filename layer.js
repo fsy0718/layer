@@ -19,6 +19,7 @@ define(function(require) {
     operates: [['close', '', '']],
     btns: false,
     esc: true,
+    maskClose: false,
     autoClose: 0,
     drag: {
       enable: true,
@@ -194,7 +195,6 @@ define(function(require) {
   };
   _parseBtnsConf = function(conf, isBtns) {
     var i, len, str, _btns, _i, _item;
-    _parseBtnsConf = function(conf, isBtns) {};
     _btns = {
       msg: []
     };
@@ -356,6 +356,8 @@ define(function(require) {
         });
         cont.css('height', data.height);
       }
+
+      /*TODO 还需要重置小于的情况 */
       return;
     }
     ele.css(_conf);
@@ -406,6 +408,9 @@ define(function(require) {
       if (!layer._escs.length) {
         $(document).off('keyup.layer');
       }
+    }
+    if (layer.settings.maskClose) {
+      $('.layer-mask.mask-' + layer.idx).off('click.layer');
     }
     if (layer._drag) {
       return ele.draggable('destroy');
@@ -468,7 +473,22 @@ define(function(require) {
         });
       }
       layer._escs.push(layer.idx);
-      return layer.esc();
+      layer.esc();
+    }
+    if (layer.settings.mask && layer.settings.maskClose) {
+      return $('.layer-mask.mask-' + layer.idx).on('click.layer', function() {
+        var _close;
+        _close = ele.find('.btn-layer-close');
+        if (_close.length) {
+          return _close.trigger('click.layer');
+        } else {
+          if ($.isFunction(layer.settings.callbacks.close)) {
+            return layer.settings.callbacks.close({}, null, ele, layer, null);
+          } else {
+            return layer.destroy();
+          }
+        }
+      });
     }
   };
   isClassOrId = function(string) {
