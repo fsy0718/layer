@@ -11,6 +11,7 @@ define (require)->
       top: '50%'
       left: '50%'
     mask: true  #遮罩层
+    maskContainer: 'body'
     title: '标题'
     cont: ''
     toolbar: true
@@ -69,7 +70,7 @@ define (require)->
       self.settings = _conf
       self.idx = zIndex / 2 + 1
       self.status = 'active'
-      SX.layers[self.idx] = self
+      window.layers[self.idx] = self
       init(self)
 
       self
@@ -199,6 +200,7 @@ define (require)->
     else if $.isArray(conf)
       return {msg: conf}
     conf
+
   _createEle = (type,conf,ele,layer)->  #根据配置生成对应的元素
     if type is 'btns' or type is 'operates'
       isBtn = type is 'btns'
@@ -245,7 +247,7 @@ define (require)->
         else if i is 8
           _box = ele.find('.layer-toolbar')
         else
-          _box = 'body'
+          _box = layer.settings.maskContainer || 'body'
         _ele.appendTo(_box)
       i++
 
@@ -289,16 +291,19 @@ define (require)->
     first and _conf.withoutArea = _getWithoutAreaHeight(ele)
     ox = 'visible'
     oy = 'visible'
+    ###此处会由于滚动条的出现产生宽度变化，需要fixed###
     if layerView['_width'] > _conf.wwidth or layerView['_width'] > _conf.maxWidth or _conf.minWidth > _conf.wwidth or !first and layerView['_width'] < layer._view.width
       ox = 'scroll'
     area.css 'overflowX',ox
     cont.css 'width',layerView['_width'] - cont.outerWidth(true) + cont.width()
-    if layerView['_height'] > _conf.wheight or layerView['_height'] > _conf.maxHeight or _conf.minHeight > _conf.wheight or !first and layerView['_height'] < layer._view.height
+    if layerView['_height'] > _conf.wheight or layerView['_height'] > _conf.maxHeight or _conf.minHeight > _conf.wheight or !first and layerView['_height'] < layer._view.height or layerView['_height'] < area.outerHeight(true)
       oy = 'scroll'
     area.css
       'overflowY': oy
       height: _conf.height - _conf.withoutArea
-    cont.css 'height',layerView['_height'] - _conf.withoutArea
+    _contPHeight = cont.outerHeight(true) - cont.height()
+    cont.css 'height',layerView['_height'] - _conf.withoutArea - _contPHeight
+
     layer._view = _conf
 
   _autoClose = (ele,layer)->  #ele可能是layer 也可能是layer-cont
@@ -361,11 +366,11 @@ define (require)->
           if e.keyCode is 27
             len = layer.escQue.length
             while len-- > 0
-              if SX.layers[layer.escQue[len]].status isnt 'hidden'
-                if $.isFunction(SX.layers[layer.escQue[len]].settings.callbacks.close)
-                  SX.layers[layer.escQue[len]].settings.callbacks.close(e,$('.layer-idx-' + SX.layers[layer.escQue[len]].idx),$('.layer-idx-' + SX.layers[layer.escQue[len]].idx),SX.layers[layer.escQue[len]],eData)
+              if window.layers[layer.escQue[len]].status isnt 'hidden'
+                if $.isFunction(window.layers[layer.escQue[len]].settings.callbacks.close)
+                  window.layers[layer.escQue[len]].settings.callbacks.close(e,$('.layer-idx-' + window.layers[layer.escQue[len]].idx),$('.layer-idx-' + window.layers[layer.escQue[len]].idx),window.layers[layer.escQue[len]],eData)
                 else
-                  SX.layers[layer.escQue[len]].destroy()
+                  window.layers[layer.escQue[len]].destroy()
             undefined
       layer._escs.push(layer.idx)
       layer.esc()
@@ -386,6 +391,8 @@ define (require)->
     ele = $('<div lidx="' + layer.idx + '" class="m-layer layer-idx-' + layer.idx + ' ' + (layer.settings.lclass || '') + '" style="z-index:-999;left:-99999px;position:' + (layer.settings.view.position || 'fixed') + '"></div>')
     _createShelf(ele,layer)
     ele.appendTo('body')
+    if layer.settings.maskContainer isnt 'body'
+      $('.mask-' + layer.idx).css('position','absolute')
     $.isFunction(layer.settings.callbacks.beforeShow) and layer.settings.callbacks.beforeShow(ele,layer)
     _adjustView(ele,layer.settings.view,layer,true)
     _bindEvent(ele,layer)
@@ -398,7 +405,7 @@ define (require)->
     unless idx
       return @
     else
-      SX.layers[idx]
+      window.layers[idx]
 
   Layer::asyncIframeHeight = (iframe)->
     if !(iframe and iframe.length)
@@ -415,7 +422,7 @@ define (require)->
     h
 
   Layer::show = (idx)->
-    layer = if idx then SX.layers[idx] else @
+    layer = if idx then window.layers[idx] else @
     if layer
       layer.status = 'active'
       layer.esc()
@@ -433,7 +440,7 @@ define (require)->
 
 
   Layer::hide = (idx)->
-    layer = if idx then SX.layers[idx] else @
+    layer = if idx then window.layers[idx] else @
     if layer
       _layer = $('.layer-idx-' + layer.idx).hide()
       layer.status = 'hidden'
@@ -446,7 +453,7 @@ define (require)->
         if layer.settings.ajax.carrier is 'iframe' then _layer.find('.layer-iframe').attr('src','javascript:;') else layer.ajax and layer.ajax.abort()
 
   Layer::destroy = (idx)->
-    layer = if idx then SX.layers[idx] else @
+    layer = if idx then window.layers[idx] else @
     if layer
       layer.hide()
       _layer = $('.layer-idx-' + layer.idx)
@@ -455,7 +462,7 @@ define (require)->
       layer.settings.mask and $('.mask-' + layer.idx).remove()
       layer.settings = null
       layer._drag = null
-      delete SX.layers[layer.idx]
+      delete window.layers[layer.idx]
       layer = null
 
   Layer::esc = (idx)->
@@ -467,7 +474,7 @@ define (require)->
     if idxs
       self.escQue.length = 0
       $.each idxs,(i,j)->
-        if SX.layers[j] and SX.layers[j].status isnt 'hidden' and ~$.inArray(j,self._escs)
+        if window.layers[j] and window.layers[j].status isnt 'hidden' and ~$.inArray(j,self._escs)
           self.escQue.push(j)
 
   Layer::autoArea = (data)->  # TODO 此处需要重新考虑动态加载的高度
